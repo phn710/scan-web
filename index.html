@@ -1,0 +1,2356 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>QR Kho PRO v4</title>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+
+/* cố định thanh trên */
+
+.headerFixed{
+position: sticky;
+top: 0;
+z-index: 999;
+background: #f5f5f5;
+padding-bottom: 5px;
+}
+.tableWrap{
+max-height:72vh;
+overflow-y:auto;
+border:1px solid #ccc;
+}
+
+.tableWrap th{
+position:sticky;
+top:0;
+background:white;
+z-index:5;
+}
+
+body{
+font-family:Arial;
+padding:10px;
+background:#f5f5f5;
+}
+	
+.primaryBtn{
+background:#0984e3;
+color:white;
+border:none;
+border-radius:6px;
+padding:6px 12px;
+font-weight:bold;
+}
+
+.primaryBtn:hover{
+background:#0864b1;
+}
+
+.tabBtn{
+padding:5px 10px;
+font-size:13px;
+}
+
+input,select{
+padding:6px;
+margin:5px;
+}
+
+button{
+padding:6px 12px;
+margin:5px;
+cursor:pointer;
+}
+
+input,select{
+padding:4px;
+margin:3px;
+font-size:13px;
+}
+
+button{
+padding:4px 8px;
+margin:3px;
+font-size:13px;
+cursor:pointer;
+}
+
+h2{
+margin:5px 0;
+font-size:18px;
+}
+
+h3{
+margin:5px 0;
+font-size:15px;
+}
+
+table{
+border-collapse:collapse;
+width:100%;
+}
+
+.box{
+background:white;
+padding:8px 10px;
+margin-bottom:8px;
+border-radius:8px;
+box-shadow:0 2px 8px rgba(0,0,0,0.15);
+}
+
+td,th{
+border:1px solid #e0e0e0;
+padding:6px;
+text-align:center;
+}
+
+tr:nth-child(even){
+background:#fafafa;
+}
+tr:hover{
+background:#ffeaa7;
+cursor:pointer;
+}
+
+.newRow{
+background:#55efc4 !important;
+}
+
+.tab{
+display:none;
+}
+
+.tab.active{
+display:block;
+}
+
+.tabBtn{
+background:#ecf0f1;
+border:none;
+border-radius:8px;
+font-weight:bold;
+padding:8px 16px;
+transition:0.2s;
+}
+
+.tabBtn:hover{
+background:#d0d7de;
+}
+
+.tabBtn.active{
+background:#0984e3;
+color:white;
+box-shadow:0 2px 6px rgba(0,0,0,0.2);
+}
+
+.tabBtn.active{
+background:#0984e3;
+color:white;
+}
+
+#loginPage{
+max-width:400px;
+margin:auto;
+margin-top:80px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- LOGIN -->
+
+<div id="loginPage">
+
+<h2>🔐 Đăng nhập hệ thống</h2>
+
+<div class="box">
+
+<input id="username" placeholder="Tên đăng nhập">
+
+<br>
+
+<input id="password" type="password" placeholder="Mật khẩu">
+
+<br>
+
+<button onclick="login()">Đăng nhập</button>
+
+</div>
+
+</div>
+
+
+<!-- MAIN -->
+
+<div id="mainApp" style="display:none">
+
+<div class="headerFixed">
+
+<div class="box">
+
+<button class="tabBtn" onclick="showTab('nhap',this)">📥 Nhập</button>
+
+<button class="tabBtn" onclick="showTab('scan',this)">📤 Xuất</button>
+
+<button class="tabBtn" onclick="showTab('importList',this)">📄 Dữ liệu nhập</button>
+
+<button class="tabBtn" onclick="showTab('export',this)">📄 Dữ liệu xuất</button>
+
+<button class="tabBtn" onclick="showTab('exportList',this)">📤 List xuất hàng</button>
+
+<button class="tabBtn" onclick="showTab('users',this)">👤 Users</button>
+
+<button onclick="backupData()">📦 Backup</button>
+
+<button onclick="logout()">🚪 Logout</button>
+
+</div>
+
+
+<!-- IMPORT -->
+
+<div id="importSection">
+
+<h2>📥 Import DATA</h2>
+
+<div class="box">
+
+<input type="file" id="fileInput">
+
+<button onclick="importExcel()">Import</button>
+
+</div> <!-- box import -->
+
+</div> <!-- importSection -->
+
+</div> <!-- headerFixed -->
+
+<!-- NHAP TAB -->
+
+<div id="nhap" class="tab">
+
+<h2>📥 Scan Nhập</h2>
+
+<input id="qrInputNhap"
+placeholder="Scan nhập tại đây...">
+
+<button onclick="importAll()">
+📥 Nhập dữ liệu
+</button>
+
+<div class="box">
+
+<h3>📋 Danh sách đã nhập</h3>
+
+<h3 id="totalNhap">Tổng dòng: 0</h3>
+
+<div class="tableWrap">
+
+<table id="listNhap"></table>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- SCAN TAB -->
+
+<div id="scan" class="tab">
+
+<h2>🔍 Scan QR</h2>
+
+<input id="qrInput" placeholder="Scan tại đây...">
+
+<input id="searchBox"
+placeholder="Tìm ID..."
+oninput="searchID()">
+
+<div class="box">
+
+<h3>📋 Danh sách đã scan</h3>
+
+<h3 id="totalKG">Tổng dòng: 0</h3>
+
+<button onclick="exportAll()">📤 XUẤT</button>
+
+<div class="tableWrap">
+
+<table id="list"></table>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- IMPORT LIST -->
+
+<div id="importList" class="tab">
+
+<h2>📄 Dữ liệu nhập</h2>
+
+<div class="box">
+
+<input type="date" id="importFromDate">
+
+<input type="date" id="importToDate">
+
+<button onclick="filterImportByDate()">Lọc</button>
+
+<button onclick="renderImport()">Hiện tất cả</button>
+
+<button onclick="exportImportExcel()">
+📤 Xuất Excel
+</button>
+
+</div>
+
+<h3 id="totalImport">
+
+Tổng dòng: 0
+
+</h3>
+
+<div class="tableWrap">
+
+<table id="importTable"></table>
+
+</div>
+
+</div>
+
+<!-- EXPORT TAB -->
+
+<div id="export" class="tab">
+
+<div class="box">
+
+<input type="date" id="exportFromDate">
+
+<input type="date" id="exportToDate">
+
+<button onclick="filterExportByDate()">Lọc</button>
+
+<button onclick="renderExport()">Hiện tất cả</button>
+
+<button onclick="exportExcel()">📤 Xuất Excel</button>
+
+</div>
+
+<div class="box">
+
+<div class="tableWrap">
+
+<table id="exportTable"></table>
+
+</div>
+
+</div>
+
+</div>
+
+<div id="exportList" class="tab">
+
+<h2>📤 List xuất hàng</h2>
+
+<button class="primaryBtn"
+onclick="loadSheetNhap()">
+🔄 Load dữ liệu
+</button>
+
+<div class="tableWrap">
+
+<table id="exportListTable"></table>
+
+</div>
+
+</div>
+
+<!-- USERS TAB -->
+
+<div id="users" class="tab">
+
+<div class="box">
+
+<h3>👤 Quản lý User</h3>
+
+<input id="newUser" placeholder="Username">
+
+<input id="newPass" placeholder="Password">
+
+<select id="newRole">
+
+<option value="user">User</option>
+
+<option value="admin">Admin</option>
+
+</select>
+
+<button onclick="addUser()">Thêm User</button>
+
+<table id="userTable"></table>
+
+</div>
+
+</div>
+
+
+<script>
+// ============================
+// CONFIG
+// ============================
+
+const SIZES=[
+"80","90","100",
+"110","120","130",
+"140","150","160"
+];
+
+let DATA=
+JSON.parse(
+localStorage.getItem("DATA_MASTER")
+|| "{}"
+);
+
+let data=
+JSON.parse(
+localStorage.getItem("DATA_SCAN")
+|| "[]"
+);
+
+let dataNhap=
+JSON.parse(
+localStorage.getItem("DATA_NHAP")
+|| "[]"
+);
+
+let exportedData=
+JSON.parse(
+localStorage.getItem("DATA_EXPORTED")
+|| "[]"
+);
+
+// ===== FILTER BIẾN TOÀN CỤC =====
+
+let filterID="";
+let filterTEN="";
+let filterMA="";
+
+let importedData=
+JSON.parse(
+localStorage.getItem("DATA_IMPORTED")
+|| "[]"
+);
+
+let sheetNhapData=[];
+
+let users=
+JSON.parse(
+localStorage.getItem("USERS")
+||
+'[{"username":"admin","password":"123456","role":"admin"}]'
+);
+
+let currentUser=null;
+
+
+// ============================
+// GOOGLE SHEET
+// ============================
+
+function sendToGoogleSheet(row){
+
+fetch("https://script.google.com/macros/s/AKfycby5O2TPtSJi8meNJ2ilpgS9TKYHa2ZCbygAAAE277GNStGXdlXqn8gO5GyiY8ZMF5hSeQ/exec",{
+
+method:"POST",
+
+mode:"no-cors",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify(row)
+
+});
+
+}
+
+
+// ============================
+// LOGIN
+// ============================
+
+function login(){
+
+let u=
+document.getElementById("username").value;
+
+let p=
+document.getElementById("password").value;
+
+let found=
+users.find(x=>
+x.username===u &&
+x.password===p
+);
+
+if(!found){
+
+alert("Sai tài khoản!");
+
+return;
+
+}
+
+currentUser=found;
+
+document.getElementById("loginPage").style.display="none";
+
+document.getElementById("mainApp").style.display="block";
+
+if(found.role!=="admin"){
+
+document.getElementById("importSection").style.display="none";
+
+}
+
+showTab(
+"nhap",
+document.querySelector(
+".tabBtn[onclick=\"showTab('nhap',this)\"]"
+)
+);
+
+render();
+
+renderNhap();
+
+renderUsers();
+
+loadFromGoogleSheet();
+
+loadSheetNhap();
+
+// renderImport để sau cùng
+setTimeout(()=>{
+
+renderImport();
+
+},500);
+
+document.getElementById("qrInputNhap").focus();
+
+}
+
+
+// ============================
+// LOGOUT
+// ============================
+
+function logout(){
+
+location.reload();
+
+}
+
+
+// ============================
+// TAB
+// ============================
+
+function showTab(name,btn){
+
+// đổi tab nội dung
+
+document.querySelectorAll(".tab")
+.forEach(t=>t.classList.remove("active"));
+
+document.getElementById(name)
+.classList.add("active");
+
+
+// đổi màu nút tab
+
+document.querySelectorAll(".tabBtn")
+.forEach(b=>b.classList.remove("active"));
+
+if(btn){
+
+btn.classList.add("active");
+
+}
+
+
+// nếu tab export thì render
+
+if(name==="export"){
+
+loadFromGoogleSheet();
+
+}
+
+if(name==="exportList"){
+
+loadSheetNhap();
+
+}
+}
+
+// ============================
+// IMPORT EXCEL
+// ============================
+
+function importExcel(){
+
+let file=
+document.getElementById("fileInput").files[0];
+
+if(!file){
+
+alert("Chọn file!");
+
+return;
+
+}
+
+let reader=new FileReader();
+
+reader.onload=function(e){
+
+let wb=
+XLSX.read(e.target.result,{type:'array'});
+
+let sheet=
+wb.Sheets[wb.SheetNames[0]];
+
+let json=
+XLSX.utils.sheet_to_json(sheet);
+
+json.forEach(row=>{
+
+let id=(row["ID"] || row["ID "] || "").toString().trim();
+
+if(!id) return;
+
+let sizes={};
+
+SIZES.forEach(s=>{
+
+sizes[s]=Number(row[s]||0);
+
+});
+
+if(!DATA[id]){
+
+DATA[id]=[];
+
+}
+
+DATA[id].push({
+
+ten:row["TEN"],
+
+ma:row["MA"],
+
+sizes:sizes,
+
+kg:Number(row["KG"]||0)
+
+});
+
+});
+
+localStorage.setItem(
+"DATA_MASTER",
+JSON.stringify(DATA)
+);
+
+alert("Import OK");
+
+};
+
+reader.readAsArrayBuffer(file);
+
+}
+
+// ======================
+// SCAN XUẤT
+// ======================
+
+document.addEventListener("keypress",function(e){
+
+if(e.key==="Enter"){
+
+let input=document.getElementById("qrInput");
+
+if(document.activeElement!==input) return;
+
+let value=input.value.trim();
+
+// ❌ CHẶN ID ĐÃ XUẤT
+
+if(exportedData.find(x=>x.id===value)){
+
+alert("❌ ID đã xuất rồi");
+
+input.value="";
+return;
+
+}
+
+if(!value) return;
+
+if(data.find(x=>x.id===value)){
+
+alert("❌ Trùng ID");
+
+input.value="";
+return;
+
+}
+
+if(!DATA[value]){
+
+alert("❌ Không có DATA");
+
+input.value="";
+return;
+
+}
+
+// ❌ KHÔNG CÓ TRONG LIST XUẤT CONT
+
+if(!sheetNhapData.some(x=>x.id===value)){
+
+alert("❌ ID không có trong list xuất cont");
+
+input.value="";
+return;
+
+}
+
+let lastID=value;
+
+DATA[value].forEach(d=>{
+
+let item={
+
+id:value,
+
+ten:d.ten,
+
+ma:d.ma,
+
+sizes:d.sizes,
+
+kg:d.kg,
+
+date:new Date()
+
+};
+
+data.push(item);
+
+});
+
+save();
+
+render(lastID);
+
+input.value="";
+input.focus();
+
+}
+
+});
+
+// ==========================
+// SCAN NHAP
+// ==========================
+
+document.addEventListener("keypress",function(e){
+
+if(e.key==="Enter"){
+
+let input=document.getElementById("qrInputNhap");
+
+if(document.activeElement!==input) return;
+
+let value=input.value.trim();
+
+if(!value) return;
+
+// kiểm tra đã nhập rồi (trong dữ liệu chính)
+
+if(importedData.find(x=>x.id===value)){
+
+alert("❌ ID đã nhập");
+
+input.value="";
+return;
+
+}
+
+// kiểm tra trùng trong danh sách đang scan
+
+if(dataNhap.find(x=>x.id===value)){
+
+alert("❌ ID đã scan nhập rồi");
+
+input.value="";
+return;
+
+}
+// kiểm tra có trong DATA MASTER
+
+if(!DATA[value]){
+
+alert("❌ Không có ID trong DATA");
+
+input.value="";
+return;
+
+}
+
+// tạo item nhập
+
+DATA[value].forEach(d=>{
+
+let item={
+
+id:value,
+
+ten:d.ten,
+
+ma:d.ma,
+
+sizes:d.sizes,
+
+kg:d.kg,
+
+date:new Date()
+
+};
+
+dataNhap.push(item);
+
+});
+
+
+// lưu
+
+saveNhap();
+
+// hiển thị
+
+renderNhap();
+
+// reset input
+
+input.value="";
+input.focus();
+
+}
+
+});
+
+
+// ============================
+// SAVE
+// ============================
+
+function save(){
+
+localStorage.setItem(
+"DATA_SCAN",
+JSON.stringify(data)
+);
+
+}
+
+function saveNhap(){
+
+localStorage.setItem(
+"DATA_NHAP",
+JSON.stringify(dataNhap)
+);
+
+}
+
+// ============================
+// SEARCH
+// ============================
+
+function searchID(){
+
+let key=
+document.getElementById("searchBox")
+.value.toLowerCase();
+
+let filtered=
+data.filter(x=>
+x.id.toString().toLowerCase().includes(key)
+);
+
+render(null,filtered);
+
+}
+
+
+// ============================
+// RENDER LIST
+// ============================
+
+function render(highlightID,renderData){
+
+let table=document.getElementById("list");
+
+table.innerHTML="";
+
+let total=0;
+
+let header=table.insertRow();
+
+["STT","ID","TEN","SIZE","KG","TIME","XUẤT"]
+
+.forEach(h=>{
+
+let th=document.createElement("th");
+
+th.innerText=h;
+
+header.appendChild(th);
+
+});
+
+(renderData||data)
+.forEach((item,index)=>{
+
+
+let row=table.insertRow();
+
+if(item.id===highlightID){
+
+row.classList.add("newRow");
+
+}
+
+let sizeText="";
+
+SIZES.forEach(s=>{
+
+if(item.sizes[s]>0){
+
+sizeText+=`${s}:${item.sizes[s]} `;
+
+}
+
+});
+
+row.insertCell().innerText=index+1;
+
+row.insertCell().innerText=item.id;
+
+row.insertCell().innerText=item.ten;
+
+row.insertCell().innerText=sizeText;
+
+row.insertCell().innerText=item.kg;
+
+row.insertCell().innerText=
+new Date(item.date)
+.toLocaleString();
+
+row.onclick=()=>{
+
+if(confirm("Xoá dòng?")){
+
+data=data.filter(x=>x.id!==item.id);
+
+save();
+
+render();
+
+}
+
+};
+
+});
+
+let list = renderData || data;
+
+// lấy danh sách ID duy nhất
+let uniqueIDs = [...new Set(list.map(x => x.id))];
+
+document.getElementById("totalKG")
+.innerText = "Tổng thùng: " + uniqueIDs.length;
+}
+
+
+// ============================
+// EXPORT TABLE
+// ============================
+function renderExport(renderData){
+
+let table=
+document.getElementById("exportTable");
+
+table.innerHTML="";
+
+let header=table.insertRow();
+
+[
+"STT",
+"ID",
+"TEN",
+"MA",
+"80","90","100",
+"110","120","130",
+"140","150","160",
+"KG",
+"NGÀY",
+"XÓA"
+]
+
+.forEach(h=>{
+
+let th=document.createElement("th");
+
+th.innerText=h;
+
+header.appendChild(th);
+
+});
+
+(renderData||exportedData)
+
+.forEach((item,index)=>{
+
+let row=table.insertRow();
+
+row.insertCell().innerText=index+1;
+
+row.insertCell().innerText=item.id;
+
+row.insertCell().innerText=item.ten;
+
+row.insertCell().innerText=item.ma;
+
+SIZES.forEach(s=>{
+
+row.insertCell().innerText=item.sizes?.[s] || 0;
+
+});
+
+row.insertCell().innerText=item.kg;
+
+row.insertCell().innerText=
+new Date(item.date)
+.toLocaleDateString("en-US");
+
+let delCell=row.insertCell();
+
+if(currentUser && currentUser.role==="admin"){
+
+let btn=document.createElement("button");
+
+btn.innerText="❌";
+
+btn.onclick=function(){
+
+if(confirm("Xoá dòng này?")){
+
+exportedData.splice(index,1);
+
+localStorage.setItem(
+"DATA_EXPORTED",
+JSON.stringify(exportedData)
+);
+
+renderExport(exportedData);
+
+}
+
+};
+
+delCell.appendChild(btn);
+
+}
+
+});
+
+let list = renderData || exportedData;
+
+// lấy ID không trùng
+let uniqueIDs = [...new Set(list.map(x => x.id))];
+
+// tạo dòng tổng nếu chưa có
+let totalText =
+document.getElementById("totalExport");
+
+if(!totalText){
+
+let h3 = document.createElement("h3");
+
+h3.id = "totalExport";
+
+document.getElementById("exportTable")
+.parentElement
+.parentElement
+.insertBefore(
+h3,
+document.getElementById("exportTable")
+.parentElement
+);
+
+totalText = h3;
+
+}
+
+totalText.innerText =
+"Tổng thùng: " + uniqueIDs.length;
+
+}
+	
+// ============================
+// FILTER DATE
+// ============================
+
+function filterExportByDate(){
+
+let from=
+document.getElementById("exportFromDate").value;
+
+let to=
+document.getElementById("exportToDate").value;
+
+if(!from||!to){
+
+alert("Chọn ngày");
+
+return;
+
+}
+
+
+// chỉnh ngày cuối
+
+let fromDate=new Date(from);
+
+let toDate=new Date(to);
+
+toDate.setHours(23,59,59,999);
+
+let filtered=exportedData.filter(x=>{
+
+let d=new Date(x.date);
+
+return d>=fromDate
+&&
+d<=toDate;
+
+});
+
+renderExport(filtered);
+
+}
+
+function applyExportFilter(){
+
+let filtered = exportedData.filter(x=>{
+
+return (
+
+(!filterID || x.id.toLowerCase().includes(filterID)) &&
+
+(!filterTEN || x.ten.toLowerCase().includes(filterTEN)) &&
+
+(!filterMA || x.ma.toLowerCase().includes(filterMA))
+
+);
+
+});
+
+renderExport(filtered);
+
+}
+
+// ============================
+// FILTER IMPORT DATE
+// ============================
+
+function filterImportByDate(){
+
+let from =
+document.getElementById("importFromDate").value;
+
+let to =
+document.getElementById("importToDate").value;
+
+if(!from || !to){
+
+alert("Chọn ngày");
+
+return;
+
+}
+
+let fromDate = new Date(from);
+
+let toDate = new Date(to);
+
+toDate.setHours(23,59,59,999);
+
+let filtered = importedData.filter(x=>{
+
+let d = new Date(x.date);
+
+return d >= fromDate
+&&
+d <= toDate;
+
+});
+
+renderImport(filtered);
+
+}
+
+// ============================
+// EXPORT EXCEL
+// ============================
+
+function exportExcel(){
+
+let ws=
+XLSX.utils.table_to_sheet(
+document.getElementById("exportTable")
+);
+
+let wb=
+XLSX.utils.book_new();
+
+XLSX.utils.book_append_sheet(
+wb,
+ws,
+"DATA"
+);
+
+XLSX.writeFile(
+wb,
+"export_data.xlsx"
+);
+
+}
+
+function exportImportExcel(){
+
+let table=
+document.getElementById("importTable");
+
+if(!table){
+
+alert("Không có bảng dữ liệu nhập");
+
+return;
+
+}
+
+let ws=
+XLSX.utils.table_to_sheet(table);
+
+let wb=
+XLSX.utils.book_new();
+
+XLSX.utils.book_append_sheet(
+wb,
+ws,
+"DATA_NHAP"
+);
+
+XLSX.writeFile(
+wb,
+"import_data.xlsx"
+);
+
+}
+
+// ============================
+// USERS
+// ============================
+
+function renderUsers(){
+
+let table=
+document.getElementById("userTable");
+
+table.innerHTML="";
+
+// ===== HEADER =====
+
+let header=table.insertRow();
+
+["Username","Password","Role","Đổi MK","Xóa"]
+
+.forEach(h=>{
+
+let th=document.createElement("th");
+
+th.innerText=h;
+
+header.appendChild(th);
+
+});
+
+// ===== DATA =====
+
+users.forEach((u,index)=>{
+
+let row=table.insertRow();
+
+row.insertCell().innerText=u.username;
+
+row.insertCell().innerText=u.password;
+
+row.insertCell().innerText=u.role;
+
+
+// ===== ĐỔI PASSWORD =====
+
+let editCell=row.insertCell();
+
+let editBtn=document.createElement("button");
+
+editBtn.innerText="✏️";
+
+editBtn.onclick=function(){
+
+let newPass=
+prompt("Nhập password mới:");
+
+if(!newPass) return;
+
+users[index].password=newPass;
+
+localStorage.setItem(
+"USERS",
+JSON.stringify(users)
+);
+
+renderUsers();
+
+alert("Đã đổi password");
+
+};
+
+editCell.appendChild(editBtn);
+
+
+// ===== XÓA USER =====
+
+let delCell=row.insertCell();
+
+let btn=document.createElement("button");
+
+btn.innerText="❌";
+
+btn.onclick=function(){
+
+if(confirm("Xóa user này?")){
+
+users.splice(index,1);
+
+localStorage.setItem(
+"USERS",
+JSON.stringify(users)
+);
+
+renderUsers();
+
+}
+
+};
+
+// không cho xóa admin chính
+
+if(u.username==="admin"){
+
+btn.disabled=true;
+
+btn.innerText="🔒";
+
+}
+
+delCell.appendChild(btn);
+
+});
+
+}
+function renderNhap(){
+
+let table=
+document.getElementById("listNhap");
+
+table.innerHTML="";
+
+let header=table.insertRow();
+
+[
+"STT",
+"ID",
+"TEN",
+"MA",
+
+"80","90","100",
+"110","120","130",
+"140","150","160",
+
+"KG"
+
+]
+
+.forEach(h=>{
+
+let th=document.createElement("th");
+
+th.innerText=h;
+
+header.appendChild(th);
+
+});
+
+dataNhap.forEach((item,index)=>{
+
+let row=table.insertRow();
+
+row.onclick=()=>{
+
+if(confirm("Xoá dòng này?")){
+
+dataNhap=dataNhap.filter(x=>x.id!==item.id);
+
+saveNhap();
+
+renderNhap();
+
+}
+
+};
+
+row.insertCell().innerText=index+1;
+
+row.insertCell().innerText=item.id;
+
+row.insertCell().innerText=item.ten;
+
+row.insertCell().innerText=item.ma;
+
+// sizes
+
+SIZES.forEach(s=>{
+
+row.insertCell()
+
+.innerText=item.sizes?.[s] || 0;
+
+});
+
+row.insertCell().innerText=item.kg;
+
+});
+
+let uniqueIDs = [...new Set(dataNhap.map(x => x.id))];
+
+document.getElementById("totalNhap")
+.innerText = "Tổng thùng: " + uniqueIDs.length;
+
+}
+
+function addUser(){
+
+let u=
+document.getElementById("newUser").value;
+
+let p=
+document.getElementById("newPass").value;
+
+let r=
+document.getElementById("newRole").value;
+
+if(!u||!p){
+
+alert("Nhập đủ thông tin");
+
+return;
+
+}
+
+users.push({
+
+username:u,
+password:p,
+role:r
+
+});
+
+localStorage.setItem(
+"USERS",
+JSON.stringify(users)
+);
+
+renderUsers();
+
+alert("Đã thêm user");
+
+}
+
+
+// ============================
+// BACKUP
+// ============================
+
+function backupData(){
+
+let blob=new Blob(
+[JSON.stringify(data)],
+{type:"application/json"}
+);
+
+let a=document.createElement("a");
+
+a.href=
+URL.createObjectURL(blob);
+
+a.download="backup_data.json";
+
+a.click();
+
+}
+
+
+function exportAll(){
+
+if(data.length===0){
+
+alert("Không có dữ liệu để xuất");
+
+return;
+
+}
+
+// chuyển từng dòng (tránh lỗi concat)
+
+data.forEach(item=>{
+
+if(!exportedData.find(x=>x.id===item.id)){
+
+exportedData.push({...item});
+
+}
+
+// gửi Google Sheet
+
+sendToGoogleSheet({
+
+id:item.id,
+ten:item.ten,
+ma:item.ma,
+
+size:JSON.stringify(item.sizes), // giữ size
+
+kg:item.kg,
+
+date:new Date(item.date)
+.toLocaleString()
+
+});
+});
+
+// lưu lại ngay
+
+localStorage.setItem(
+"DATA_EXPORTED",
+JSON.stringify(exportedData)
+);
+
+// xoá bảng scan
+
+data=[];
+
+localStorage.setItem(
+"DATA_SCAN",
+JSON.stringify(data)
+);
+
+// render lại
+
+render();
+
+renderExport();
+
+alert("Đã xuất toàn bộ");
+
+}
+
+function importAll(){
+
+if(dataNhap.length===0){
+
+alert("Không có dữ liệu để nhập");
+
+return;
+
+}
+
+// chuyển qua danh sách nhập
+
+importedData=
+importedData.concat(dataNhap);
+
+// gửi lên Google Sheet
+
+dataNhap.forEach(item=>{
+
+sendToGoogleSheet({
+
+type:"NHAP",
+
+id:item.id,
+ten:item.ten,
+ma:item.ma,
+
+size:JSON.stringify(item.sizes),
+
+kg:item.kg,
+
+date:new Date(item.date)
+.toLocaleString()
+
+});
+
+});
+
+// xóa danh sách scan nhập
+
+dataNhap=[];
+
+saveNhap();
+
+// lưu danh sách nhập
+
+localStorage.setItem(
+"DATA_IMPORTED",
+JSON.stringify(importedData)
+);
+
+// hiển thị
+
+renderNhap();
+
+renderImport();
+
+alert("✅ Đã nhập dữ liệu");
+
+}
+// ===== LOAD DATA TỪ GOOGLE SHEET =====
+
+async function loadFromGoogleSheet(){
+
+let url =
+"https://script.google.com/macros/s/AKfycby5O2TPtSJi8meNJ2ilpgS9TKYHa2ZCbygAAAE277GNStGXdlXqn8gO5GyiY8ZMF5hSeQ/exec";
+
+try{
+
+let res = await fetch(url,{
+method:"GET"
+});
+
+let sheetData = await res.json();
+
+sheetData.forEach(item=>{
+
+// nếu sheet trả size
+
+if(item.size){
+
+// nếu size đã là object thì dùng luôn
+
+if(typeof item.size === "object"){
+
+item.sizes = item.size;
+
+}
+
+// nếu là string thì parse
+
+else{
+
+try{
+
+item.sizes = JSON.parse(item.size);
+
+}catch(e){
+
+console.log("Parse lỗi size:",item.size);
+
+item.sizes = {};
+
+}
+
+}
+
+}
+// nếu sheet trả sizes dạng string
+
+if(item.sizes && typeof item.sizes==="string"){
+
+try{
+
+item.sizes = JSON.parse(item.sizes);
+
+}catch(e){
+
+item.sizes = {};
+
+}
+
+}
+
+// nếu chưa có sizes
+
+if(!item.sizes){
+
+item.sizes = {};
+
+}
+
+// đảm bảo đủ size
+
+SIZES.forEach(s=>{
+
+if(item.sizes[s]==null){
+
+item.sizes[s]=0;
+
+}
+
+});
+
+});
+
+// lưu dữ liệu
+
+if(sheetData && sheetData.length>0){
+
+exportedData = sheetData;
+
+}
+
+// chỉ lưu local nếu có dữ liệu
+
+if(exportedData.length>0){
+
+localStorage.setItem(
+"DATA_EXPORTED",
+JSON.stringify(exportedData)
+);
+
+}
+
+
+renderExport();
+
+console.log("Đã load dữ liệu từ Google Sheet");
+
+}catch(err){
+
+console.log("Lỗi load dữ liệu:",err);
+
+}
+
+}
+
+function renderImport(renderData){
+
+let table=
+document.getElementById("importTable");
+
+if(!table) return;
+
+table.innerHTML="";
+
+let header=table.insertRow();
+
+// ===== HEADER =====
+
+[
+"STT",
+"ID",
+"TEN",
+"MA",
+"80","90","100",
+"110","120","130",
+"140","150","160",
+"KG",
+"NGÀY",
+"XÓA"
+]
+.forEach((h,index)=>{
+
+let th=document.createElement("th");
+
+// ===== ID =====
+if(index===1){
+
+let input=document.createElement("input");
+
+input.placeholder="ID";
+
+input.onkeydown=function(e){
+
+if(e.key==="Enter"){
+
+if(!this.value){
+filterID="";
+filterTEN="";
+filterMA="";
+renderImport();
+return;
+}
+
+filterID=this.value.toLowerCase();
+
+applyImportFilter();
+
+}
+
+};
+
+th.appendChild(input);
+
+}
+
+// ===== TEN =====
+else if(index===2){
+
+let input=document.createElement("input");
+
+input.placeholder="TEN";
+
+input.onkeydown=function(e){
+
+if(e.key==="Enter"){
+
+if(!this.value){
+
+filterID="";
+filterTEN="";
+filterMA="";
+renderImport();
+return;
+
+}
+
+filterTEN=this.value.toLowerCase();
+
+applyImportFilter();
+
+}
+
+};
+
+th.appendChild(input);
+
+}
+
+// ===== MA =====
+else if(index===3){
+
+let input=document.createElement("input");
+
+input.placeholder="MA";
+
+input.onkeydown=function(e){
+
+if(e.key==="Enter"){
+
+if(!this.value){
+
+filterID="";
+filterTEN="";
+filterMA="";
+renderImport();
+return;
+
+}
+
+filterMA=this.value.toLowerCase();
+
+applyImportFilter();
+
+}
+
+};
+
+th.appendChild(input);
+
+}
+
+else{
+
+th.innerText=h;
+
+}
+
+header.appendChild(th);
+
+});
+
+
+
+(renderData || importedData)
+.forEach((item,index)=>{
+
+let row=table.insertRow();
+
+row.insertCell().innerText=index+1;
+
+row.insertCell().innerText=item.id;
+
+row.insertCell().innerText=item.ten;
+
+row.insertCell().innerText=item.ma;
+
+SIZES.forEach(s=>{
+
+row.insertCell()
+
+.innerText=item.sizes?.[s] || 0;
+
+});
+
+row.insertCell().innerText=item.kg;
+
+row.insertCell()
+
+.innerText=new Date(item.date)
+
+.toLocaleDateString("en-US");
+
+let delCell=row.insertCell();
+
+let btn=document.createElement("button");
+
+btn.innerText="❌";
+
+btn.onclick=function(){
+
+if(confirm("Xoá dòng này?")){
+
+importedData.splice(index,1);
+
+localStorage.setItem(
+"DATA_IMPORTED",
+JSON.stringify(importedData)
+);
+
+renderImport();
+
+}
+
+};
+
+if(currentUser && currentUser.role==="admin"){
+
+delCell.appendChild(btn);
+
+}
+
+});
+
+let list = renderData || importedData;
+
+// lấy ID không trùng
+let uniqueIDs =
+[...new Set(list.map(x => x.id))];
+
+document.getElementById("totalImport")
+.innerText =
+"Tổng thùng: " + uniqueIDs.length;
+
+}
+
+async function loadSheetNhap(){
+
+let url =
+"https://script.google.com/macros/s/AKfycby5O2TPtSJi8meNJ2ilpgS9TKYHa2ZCbygAAAE277GNStGXdlXqn8gO5GyiY8ZMF5hSeQ/exec?type=NHAP";
+
+try{
+
+let res=await fetch(url);
+
+sheetNhapData=await res.json();
+
+renderExportList();
+
+console.log("Đã load sheet nhap");
+
+}catch(err){
+
+console.log("Lỗi load sheet nhap:",err);
+
+}
+
+}
+
+function applyImportFilter(){
+
+let filtered = importedData.filter(x=>{
+
+return (
+
+(!filterID || x.id.toLowerCase().includes(filterID)) &&
+
+(!filterTEN || x.ten.toLowerCase().includes(filterTEN)) &&
+
+(!filterMA || x.ma.toLowerCase().includes(filterMA))
+
+);
+
+});
+
+renderImport(filtered);
+
+}
+
+function applyExportListFilter(){
+
+let table =
+document.getElementById("exportListTable");
+
+let inputs =
+table.querySelectorAll("input");
+
+let idKey =
+inputs[0]?.value.toLowerCase() || "";
+
+let tenKey =
+inputs[1]?.value.toLowerCase() || "";
+
+let maKey =
+inputs[2]?.value.toLowerCase() || "";
+
+let filtered =
+sheetNhapData.filter(x=>{
+
+return (
+
+(!idKey || x.id.toLowerCase().includes(idKey)) &&
+(!tenKey || x.ten.toLowerCase().includes(tenKey)) &&
+(!maKey || x.ma.toLowerCase().includes(maKey))
+
+);
+
+});
+
+renderExportListFiltered(filtered);
+
+}
+
+function renderExportListFiltered(dataFiltered){
+
+let table=
+document.getElementById("exportListTable");
+
+table.innerHTML="";
+
+let header=table.insertRow();
+
+[
+"STT",
+"ID",
+"TEN",
+"MA",
+"80","90","100",
+"110","120","130",
+"140","150","160",
+"KG",
+"NGÀY"
+]
+
+.forEach(h=>{
+
+let th=document.createElement("th");
+
+th.innerText=h;
+
+header.appendChild(th);
+
+});
+
+dataFiltered.forEach((item,index)=>{
+
+let row=table.insertRow();
+
+row.insertCell().innerText=index+1;
+row.insertCell().innerText=item.id;
+row.insertCell().innerText=item.ten;
+row.insertCell().innerText=item.ma;
+
+SIZES.forEach(s=>{
+
+row.insertCell().innerText=
+item.size?.[s] || 0;
+
+});
+
+row.insertCell().innerText=item.kg;
+
+row.insertCell().innerText=
+new Date(item.date)
+.toLocaleDateString();
+
+});
+
+}
+
+function renderExportList(){
+
+let table=
+document.getElementById("exportListTable");
+
+table.innerHTML="";
+
+let header=table.insertRow();
+
+[
+"STT",
+"ID",
+"TEN",
+"MA",
+"80","90","100",
+"110","120","130",
+"140","150","160",
+"KG",
+"NGÀY"
+]
+
+.forEach((h,index)=>{
+
+let th=document.createElement("th");
+
+// ===== ID =====
+if(index===1){
+
+let input=document.createElement("input");
+
+input.placeholder="ID";
+
+input.onkeydown=function(e){
+
+if(e.key==="Enter"){
+
+if(!this.value){
+
+renderExportList();
+return;
+
+}
+
+applyExportListFilter();
+
+}
+
+};
+
+th.appendChild(input);
+
+}
+
+// ===== TEN =====
+else if(index===2){
+
+let input=document.createElement("input");
+
+input.placeholder="TEN";
+
+input.onkeydown=function(e){
+
+if(e.key==="Enter"){
+
+if(!this.value){
+
+renderExportList();
+return;
+
+}
+
+applyExportListFilter();
+
+}
+
+};
+
+th.appendChild(input);
+
+}
+
+// ===== MA =====
+else if(index===3){
+
+let input=document.createElement("input");
+
+input.placeholder="MA";
+
+input.onkeydown=function(e){
+
+if(e.key==="Enter"){
+
+if(!this.value){
+
+renderExportList();
+return;
+
+}
+
+applyExportListFilter();
+
+}
+
+};
+
+th.appendChild(input);
+
+}
+
+else{
+
+th.innerText=h;
+
+}
+
+header.appendChild(th);
+
+});
+
+sheetNhapData.forEach((item,index)=>{
+
+let row=table.insertRow();
+
+row.insertCell().innerText=index+1;
+
+row.insertCell().innerText=item.id;
+
+row.insertCell().innerText=item.ten;
+
+row.insertCell().innerText=item.ma;
+
+SIZES.forEach(s=>{
+
+row.insertCell().innerText=
+item.size?.[s] || 0;
+
+});
+
+row.insertCell().innerText=item.kg;
+
+row.insertCell().innerText=
+new Date(item.date).toLocaleDateString();
+
+});
+
+// ===== TỔNG THÙNG =====
+
+let uniqueIDs =
+[...new Set(sheetNhapData.map(x => x.id))];
+
+// tạo dòng tổng nếu chưa có
+let totalText =
+document.getElementById("totalExportList");
+
+if(!totalText){
+
+let h3 = document.createElement("h3");
+
+h3.id = "totalExportList";
+
+document.getElementById("exportListTable")
+.parentElement
+.parentElement
+.insertBefore(
+h3,
+document.getElementById("exportListTable")
+.parentElement
+);
+
+totalText = h3;
+
+}
+
+totalText.innerText =
+"Tổng thùng: " + uniqueIDs.length;
+
+}
+
+// ============================
+// DEFAULT TODAY DATE (FIX LỆCH NGÀY)
+// ============================
+
+window.addEventListener("load", function(){
+
+let today = new Date();
+
+// fix lệch timezone (+1 ngày)
+
+today.setMinutes(
+today.getMinutes()
+- today.getTimezoneOffset()
+);
+
+// format yyyy-mm-dd
+
+let todayStr =
+today.toISOString().split("T")[0];
+
+// EXPORT
+
+let exportFrom =
+document.getElementById("exportFromDate");
+
+let exportTo =
+document.getElementById("exportToDate");
+
+if(exportFrom)
+exportFrom.value = todayStr;
+
+if(exportTo)
+exportTo.value = todayStr;
+
+
+// IMPORT
+
+let importFrom =
+document.getElementById("importFromDate");
+
+let importTo =
+document.getElementById("importToDate");
+
+if(importFrom)
+importFrom.value = todayStr;
+
+if(importTo)
+importTo.value = todayStr;
+
+});
+
+</script>
+
+</body>
+</html>
