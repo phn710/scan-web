@@ -709,8 +709,6 @@ renderNhap();
 
 renderUsers();
 
-loadFromGoogleSheet();
-
 loadSheetNhap();
 
 // renderImport để sau cùng
@@ -765,11 +763,6 @@ btn.classList.add("active");
 
 // nếu tab export thì render
 
-if(name==="export"){
-
-loadFromGoogleSheet();
-
-}
 
 if(name==="exportList"){
 
@@ -1931,121 +1924,6 @@ alert("✅ Đã nhập dữ liệu");
 }
 // ===== LOAD DATA TỪ GOOGLE SHEET =====
 
-async function loadFromGoogleSheet(){
-
-let url =
-"https://script.google.com/macros/s/AKfycby5O2TPtSJi8meNJ2ilpgS9TKYHa2ZCbygAAAE277GNStGXdlXqn8gO5GyiY8ZMF5hSeQ/exec";
-
-try{
-
-let res = await fetch(url,{
-method:"GET"
-});
-
-let sheetData = await res.json();
-
-sheetData.forEach(item=>{
-
-// nếu sheet trả size
-
-if(item.size){
-
-// nếu size đã là object thì dùng luôn
-
-if(typeof item.size === "object"){
-
-item.sizes = item.size;
-
-}
-
-// nếu là string thì parse
-
-else{
-
-try{
-
-item.sizes = JSON.parse(item.size);
-
-}catch(e){
-
-console.log("Parse lỗi size:",item.size);
-
-item.sizes = {};
-
-}
-
-}
-
-}
-// nếu sheet trả sizes dạng string
-
-if(item.sizes && typeof item.sizes==="string"){
-
-try{
-
-item.sizes = JSON.parse(item.sizes);
-
-}catch(e){
-
-item.sizes = {};
-
-}
-
-}
-
-// nếu chưa có sizes
-
-if(!item.sizes){
-
-item.sizes = {};
-
-}
-
-// đảm bảo đủ size
-
-SIZES.forEach(s=>{
-
-if(item.sizes[s]==null){
-
-item.sizes[s]=0;
-
-}
-
-});
-
-});
-
-// lưu dữ liệu
-
-if(sheetData && sheetData.length>0){
-
-exportedData = sheetData;
-
-}
-
-// chỉ lưu local nếu có dữ liệu
-
-if(exportedData.length>0){
-
-localStorage.setItem(
-"DATA_EXPORTED",
-JSON.stringify(exportedData)
-);
-
-}
-
-
-renderExport();
-
-console.log("Đã load dữ liệu từ Google Sheet");
-
-}catch(err){
-
-console.log("Lỗi load dữ liệu:",err);
-
-}
-
-}
 
 function renderImport(renderData){
 
@@ -2412,99 +2290,11 @@ let header=table.insertRow();
 "NGÀY"
 ]
 
-.forEach((h,index)=>{
+.forEach(h=>{
 
 let th=document.createElement("th");
 
-// ===== ID =====
-if(index===1){
-
-let input=document.createElement("input");
-
-input.placeholder="ID";
-
-input.onkeydown=function(e){
-
-if(e.key==="Enter"){
-
-if(!this.value){
-
-renderExportList();
-return;
-
-}
-
-applyExportListFilter();
-
-}
-
-};
-
-th.appendChild(input);
-
-}
-
-// ===== TEN =====
-else if(index===2){
-
-let input=document.createElement("input");
-
-input.placeholder="TEN";
-
-input.onkeydown=function(e){
-
-if(e.key==="Enter"){
-
-if(!this.value){
-
-renderExportList();
-return;
-
-}
-
-applyExportListFilter();
-
-}
-
-};
-
-th.appendChild(input);
-
-}
-
-// ===== MA =====
-else if(index===3){
-
-let input=document.createElement("input");
-
-input.placeholder="MA";
-
-input.onkeydown=function(e){
-
-if(e.key==="Enter"){
-
-if(!this.value){
-
-renderExportList();
-return;
-
-}
-
-applyExportListFilter();
-
-}
-
-};
-
-th.appendChild(input);
-
-}
-
-else{
-
 th.innerText=h;
-
-}
 
 header.appendChild(th);
 
@@ -2541,15 +2331,14 @@ new Date(item.date).toLocaleDateString();
 let uniqueIDs =
 [...new Set(sheetNhapData.map(x => x.id))];
 
-// tạo dòng tổng nếu chưa có
 let totalText =
 document.getElementById("totalExportList");
 
 if(!totalText){
 
-let h3 = document.createElement("h3");
+let h3=document.createElement("h3");
 
-h3.id = "totalExportList";
+h3.id="totalExportList";
 
 document.getElementById("exportListTable")
 .parentElement
@@ -2560,11 +2349,11 @@ document.getElementById("exportListTable")
 .parentElement
 );
 
-totalText = h3;
+totalText=h3;
 
 }
 
-totalText.innerText =
+totalText.innerText=
 "Tổng thùng: " + uniqueIDs.length;
 
 }
