@@ -2421,16 +2421,31 @@ reader.readAsArrayBuffer(file);
 // ============================
 // GROUP MIX (gom ID trùng)
 // ============================
-
 function groupMixRows(rows){
 
 let grouped={};
 
 rows.forEach(r=>{
 
-if(!grouped[r.ID]){
+let id=r.ID;
 
-grouped[r.ID]=r;
+// nếu chưa có thì tạo từ dòng đầu
+if(!grouped[id]){
+
+grouped[id]={...r};
+
+}
+
+// ⭐ luôn kiểm tra nếu dòng này có KG thì lấy
+if("KG" in r){
+
+let kg = String(r.KG).trim();
+
+if(kg !== ""){
+
+grouped[id].KG = kg;
+
+}
 
 }
 
@@ -2439,8 +2454,6 @@ grouped[r.ID]=r;
 return Object.values(grouped);
 
 }
-
-
 // ============================
 // RENDER FORM
 // ============================
@@ -2685,6 +2698,9 @@ container.appendChild(box);
 // ============================
 
 function createMixForm(row,container){
+
+console.log("KG value:", row.KG);
+console.log("Row data:", row);
 
 let box=document.createElement("div");
 
