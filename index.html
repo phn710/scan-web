@@ -1154,11 +1154,25 @@ let table=document.getElementById("list");
 
 table.innerHTML="";
 
-let total=0;
-
 let header=table.insertRow();
 
-["STT","ID","TEN","SIZE","KG","TIME","XUẤT"]
+// HEADER
+
+[
+"STT",
+"ID",
+"TEN",
+"MA",
+
+"80","90","100",
+"110","120","130",
+"140","150","160","170",
+
+"KG",
+"TIME",
+"XUẤT"
+
+]
 
 .forEach(h=>{
 
@@ -1173,7 +1187,6 @@ header.appendChild(th);
 (renderData||data)
 .forEach((item,index)=>{
 
-
 let row=table.insertRow();
 
 if(item.id===highlightID){
@@ -1182,70 +1195,52 @@ row.classList.add("newRow");
 
 }
 
-let sizeText="";
+// STT
+row.insertCell().innerText=index+1;
+
+// ID
+row.insertCell().innerText=item.id;
+
+// TEN
+row.insertCell().innerText=item.ten;
+
+// ⭐ MA (cột bị thiếu của m)
+row.insertCell().innerText=item.ma;
+
+// SIZE
 
 SIZES.forEach(s=>{
 
-if(item.sizes[s]>0){
+let val=item.sizes?.[s];
 
-sizeText+=`${s}:${item.sizes[s]} `;
-
-}
+row.insertCell().innerText =
+(val===0 || val===undefined) ? "" : val;
 
 });
 
-row.insertCell().innerText=index+1;
-
-row.insertCell().innerText=item.id;
-
-row.insertCell().innerText=item.ten;
-
-row.insertCell().innerText=sizeText;
-
+// KG
 row.insertCell().innerText=item.kg;
 
+// TIME
 row.insertCell().innerText=
 new Date(item.date)
 .toLocaleString();
 
-row.onclick=()=>{
+// XUẤT
+row.insertCell().innerText="";
 
-if(confirm("Xoá toàn bộ ID này?")){
-
-let idToDelete = item.id;
-
-// xóa toàn bộ ID trong data
-
-data = data.filter(
-x => x.id !== idToDelete
-);
-
-// lưu lại localStorage
-
-localStorage.setItem(
-"DATA_SCAN",
-JSON.stringify(data)
-);
-
-// render lại
-
-render();
-
-}
-
-};
 });
+
+// ===== TỔNG THÙNG =====
 
 let list = renderData || data;
 
-// lấy danh sách ID duy nhất
 let uniqueIDs = [...new Set(list.map(x => x.id))];
 
 document.getElementById("totalKG")
 .innerText = "Tổng thùng: " + uniqueIDs.length;
+
 }
-
-
 // ============================
 // EXPORT TABLE
 // ============================
