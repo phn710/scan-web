@@ -2674,6 +2674,17 @@ qrDiv.style.marginRight="6px";
 let info=document.createElement("table");
 info.className="labelTable";
 
+// ===== AUTO FONT TEN =====
+
+let tenText = row.TEN || "";
+
+let tenFontSize = 15;
+
+if(tenText.length > 25) tenFontSize = 13;
+if(tenText.length > 35) tenFontSize = 12;
+if(tenText.length > 45) tenFontSize = 11;
+if(tenText.length > 55) tenFontSize = 10;
+
 info.innerHTML=`
 
 <tr>
@@ -2697,15 +2708,20 @@ ${row.STT}
 </td>
 
 </tr>
+
 <tr>
 <td colspan="3"
 style="
-font-size:15px;
+font-size:${tenFontSize}px;
 font-weight:normal;
+word-break:break-word;
+white-space:normal;
+height:32px;
 ">
-${row.TEN||""}
+${tenText}
 </td>
 </tr>
+
 <tr>
 <td colspan="3"
 style="
@@ -2738,8 +2754,34 @@ sizeTable.style.flex="1";   // ⭐ thêm dòng này
 
 // ===== AUTO SIZE 5 Ô / DÒNG =====
 
-let sizes = Object.keys(row)
-.filter(k => Number(k) && Number(row[k]) > 0);
+// ===== DANH SÁCH SIZE 39 CỘT =====
+
+const ALL_SIZES = [
+
+"80","90","100","110","120",
+"130","140","150","160","170",
+
+"(55","(60","(65","(70","(75",
+"(80","(85","(90","(95",
+
+"80)","85)","90)","95)","100)",
+"105)","110)",
+
+"S","M","L","XL","XXL","3XL"
+
+];
+
+// lọc size có số lượng
+
+let sizes = ALL_SIZES.filter(s => {
+
+let v = row[s];
+
+return v !== undefined &&
+v !== "" &&
+Number(v) > 0;
+
+});
 
 // chia nhóm 5
 
