@@ -892,6 +892,8 @@ DATA[id]=[];
 
 DATA[id].push({
 
+note:row["NOTE"] || "", 
+
 ten:row["TEN"],
 
 ma:row["MA"],
@@ -984,6 +986,8 @@ DATA[value].forEach(d=>{
 
 let item={
 
+note:d.note || "", 
+
 id:value,
 
 ten:d.ten,
@@ -1067,6 +1071,8 @@ return;
 DATA[value].forEach(d=>{
 
 let item={
+
+note:d.note || "", 
 
 id:value,
 
@@ -1167,6 +1173,7 @@ let header=table.insertRow();
 
 [
 "STT",
+"NOTE",
 "ID",
 "TEN",
 "MA",
@@ -1232,6 +1239,9 @@ row.classList.add("newRow");
 
 // STT
 row.insertCell().innerText=index+1;
+
+// NOTE
+row.insertCell().innerText=item.note || "";
 
 // ID
 row.insertCell().innerText=item.id;
@@ -1785,6 +1795,7 @@ let header=table.insertRow();
 
 [
 "STT",
+"NOTE",
 "ID",
 "TEN",
 "MA",
@@ -1840,6 +1851,8 @@ renderNhap();
 };
 
 row.insertCell().innerText=index+1;
+
+row.insertCell().innerText=item.note || "";
 
 row.insertCell().innerText=item.id;
 
