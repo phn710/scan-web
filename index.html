@@ -529,8 +529,8 @@ Tổng mã: 0
 
 <button onclick="renderImport()">Hiện tất cả</button>
 
-<button onclick="exportImportExcel()">
-📤 Xuất Excel
+<button onclick="exportImportExcel()">📤 Xuất Excel</button>
+<button class="primaryBtn"onclick="sendImportToSheet()">📤 Gửi lên Sheet
 </button>
 
 </div>
@@ -564,6 +564,7 @@ Tổng dòng: 0
 <button onclick="renderExport()">Hiện tất cả</button>
 
 <button onclick="exportExcel()">📤 Xuất Excel</button>
+<button class="primaryBtn"onclick="sendExportToSheet()">📤 Gửi lên Sheet</button>
 
 </div>
 
@@ -2053,6 +2054,8 @@ localStorage.removeItem("DATA_NHAP");
 
 localStorage.removeItem("DATA_IMPORTED");
 
+localStorage.removeItem("DATA_EXPORTED");
+
 // reset biến
 
 data=[];
@@ -2101,56 +2104,48 @@ document.getElementById("storageInfo")
 .innerText="Storage: "+kb+" KB";
 }
 
+let isExporting=false;
+
 async function exportAll(){
+
+if(isExporting){
+showMessage("⏳ Đang xử lý...");
+return;
+}
+
+isExporting=true;
+
+let btn=document.querySelector(
+"button[onclick='exportAll()']"
+);
+
+btn.disabled=true;
+
 
 if(data.length===0){
 
 alert("Không có dữ liệu để xuất");
 
+btn.disabled=false;
+isExporting=false;
+
 return;
 
 }
 
-// chuyển sang danh sách đã xuất
+
+// ===== chuyển dữ liệu =====
 
 exportedData =
 exportedData.concat(data);
 
 
-// ⭐ gửi Google Sheet có delay
-
-for (let item of data){
-
-await sendToGoogleSheet({
-
-type:"XUAT",
-
-id:item.id,
-ten:item.ten,
-ma:item.ma,
-
-sizes:JSON.stringify(item.sizes),
-
-kg:item.kg,
-
-date:new Date(item.date)
-.toLocaleString()
-
-});
-
-await new Promise(r=>setTimeout(r,100));
-
-}
-
-
-// lưu local
+// ===== LƯU =====
 
 localStorage.setItem(
 "DATA_EXPORTED",
 JSON.stringify(exportedData)
 );
-
-// xoá danh sách scan
 
 data=[];
 
@@ -2159,72 +2154,67 @@ localStorage.setItem(
 JSON.stringify(data)
 );
 
-// render lại
-
 render();
 
 renderExport();
 
 alert("Đã xuất toàn bộ");
 
+
+// ===== MỞ LẠI NÚT =====
+
+btn.disabled=false;
+
+isExporting=false;
+
+
 }
 
+let isImporting=false;
+
 async function importAll(){
+
+if(isImporting){
+showMessage("⏳ Đang xử lý...");
+return;
+}
+
+isImporting=true;
+
+let btn=document.querySelector(
+"button[onclick='importAll()']"
+);
+
+btn.disabled=true;
 
 if(dataNhap.length===0){
 
 alert("Không có dữ liệu để nhập");
 
+btn.disabled=false;
+isImporting=false;
+
 return;
 
 }
 
-// chuyển qua danh sách nhập
 
-importedData=
+// ===== xử lý nhập =====
+
+importedData =
 importedData.concat(dataNhap);
 
 
-// ⭐ gửi Google Sheet có delay
-
-for (let item of dataNhap){
-
-await sendToGoogleSheet({
-
-type:"NHAP",
-
-id:item.id,
-ten:item.ten,
-ma:item.ma,
-
-sizes:JSON.stringify(item.sizes),
-
-kg:item.kg,
-
-date:new Date(item.date)
-.toLocaleString()
-
-});
-
-await new Promise(r=>setTimeout(r,100));
-
-}
-
-
-// xóa danh sách scan nhập
+// ===== XÓA DANH SÁCH =====
 
 dataNhap=[];
 
 saveNhap();
 
-// lưu danh sách nhập
-
 localStorage.setItem(
 "DATA_IMPORTED",
 JSON.stringify(importedData)
 );
-
-// hiển thị
 
 renderNhap();
 
@@ -2232,9 +2222,14 @@ renderImport();
 
 alert("✅ Đã nhập dữ liệu");
 
-}
 
-// ===== LOAD DATA TỪ GOOGLE SHEET =====
+// ===== MỞ LẠI NÚT =====
+
+btn.disabled=false;
+
+isImporting=false;
+
+}// ===== LOAD DATA TỪ GOOGLE SHEET =====
 
 
 function renderImport(renderData){
@@ -2691,10 +2686,27 @@ rows.forEach(r=>{
 let id=r.ID;
 
 if(!grouped[id]){
-grouped[id]={...r};
+
+grouped[id]={
+
+...r,
+
+MA_LIST:[]
+
+};
+
 }
 
-// ⭐ luôn giữ KG nếu có
+// ⭐ gom tất cả MA
+
+if(r.MA){
+
+grouped[id].MA_LIST.push(r.MA);
+
+}
+
+// ⭐ giữ KG nếu có
+
 if(r.KG !== "" && r.KG !== undefined){
 
 grouped[id].KG = r.KG;
@@ -3016,19 +3028,25 @@ container.appendChild(box);
 
 function createMixForm(row,container){
 
-console.log("KG value:", row.KG);
-console.log("Row data:", row);
-
 let box=document.createElement("div");
 
 box.className="printLabel";
 
 
-// QR
+// ===== TOP (QR + STT) =====
+
+let top=document.createElement("div");
+
+top.style.display="flex";
+
+top.style.alignItems="center";
+
+top.style.marginBottom="4px";
+
+
+// ===== QR =====
 
 let qrDiv=document.createElement("div");
-
-qrDiv.className="qrBox";
 
 new QRCode(qrDiv,{
 text:row.ID,
@@ -3036,78 +3054,177 @@ width:100,
 height:100
 });
 
-qrDiv.style.marginBottom="1cm";
+qrDiv.style.marginRight="6px";
 
-// TABLE
 
-let table=document.createElement("table");
+// ===== STT (nằm ngang QR) =====
 
-table.className="labelTable";
+let sttBox=document.createElement("div");
 
-table.innerHTML=`
+sttBox.style.fontSize="16px";
+
+sttBox.style.fontWeight="bold";
+
+sttBox.innerText=row.STT;
+
+
+// ===== thêm QR + STT =====
+
+top.appendChild(qrDiv);
+
+top.appendChild(sttBox);
+
+
+// ===== ID =====
+
+let idTable=document.createElement("table");
+
+idTable.className="labelTable";
+
+idTable.innerHTML=`
 
 <tr>
-<td>STT</td>
-<td style="
+<td colspan="2"
+style="
 font-size:16px;
 font-weight:bold;
 text-align:center;
-">
-${row.STT}
-</td>
-</tr>
-
-<tr>
-<td>ID</td>
-<td style="
-font-size:18px;
-font-weight:bold;
-letter-spacing:1px;
-text-align:center;
+background:#ffeaa7;
 ">
 ${row.ID}
 </td>
 </tr>
 
+`;
+
+
+// ===== DANH SÁCH MÃ =====
+
+let maList =
+(row.MA_LIST || [])
+.slice(0,10);
+
+
+// ===== CHIA 2 CỘT =====
+
+let half =
+Math.ceil(maList.length/2);
+
+
+// ===== TABLE MÃ =====
+
+let maTable=document.createElement("table");
+
+maTable.className="labelTable";
+
+let html="";
+
+for(let i=0;i<half;i++){
+
+let left=maList[i] || "";
+
+let right=maList[i+half] || "";
+
+html+=`
+
 <tr>
-<td>KG</td>
+
 <td style="
-font-size:18px;
+font-size:11px;
+font-weight:bold;
+text-align:center;
+word-break:break-word;
+">
+${left}
+</td>
+
+<td style="
+font-size:11px;
+font-weight:bold;
+text-align:center;
+word-break:break-word;
+">
+${right}
+</td>
+
+</tr>
+
+`;
+
+}
+
+maTable.innerHTML=html;
+
+
+// ===== KG =====
+
+let kgTable=document.createElement("table");
+
+kgTable.className="labelTable";
+
+kgTable.innerHTML=`
+
+<tr>
+<td style="
+font-size:14px;
 font-weight:bold;
 text-align:center;
 ">
-${row.KG ?? ""}
+KG : ${row.KG ?? ""}
 </td>
 </tr>
 
-${
-row["NGÀY"] && String(row["NGÀY"]).trim() !== ""
-? `
+`;
+
+
+// ===== NGÀY =====
+
+if(row["NGÀY"]){
+
+let dateRow=document.createElement("table");
+
+dateRow.className="labelTable";
+
+dateRow.innerHTML=`
+
 <tr>
-<td colspan="2"
-style="
-font-size:15px;
+<td style="
+font-size:13px;
 font-weight:bold;
 text-align:center;
+background:#d0d0d0;
 ">
 ${row["NGÀY"]}
 </td>
 </tr>
-`
-: ""
-}	
-
-
 
 `;
 
-box.appendChild(qrDiv);
-box.appendChild(table);
+box.appendChild(top);
+
+box.appendChild(idTable);
+
+box.appendChild(maTable);
+
+box.appendChild(kgTable);
+
+box.appendChild(dateRow);
+
+}else{
+
+box.appendChild(top);
+
+box.appendChild(idTable);
+
+box.appendChild(maTable);
+
+box.appendChild(kgTable);
+
+}
 
 container.appendChild(box);
 
 }
-
 // ============================
 // DOWNLOAD WORD
 // ============================
@@ -3756,6 +3873,123 @@ document.getElementById(
 ).innerText=
 
 "Tổng mã: "+Object.keys(map).length;
+
+}
+
+// ============================
+// GỬI DATA NHẬP LÊN SHEET
+// ============================
+
+function sendImportToSheet(){
+
+// chỉ lấy cái chưa gửi
+
+let toSend =
+importedData.filter(x=>!x.sent);
+
+if(toSend.length===0){
+
+alert("Không có dữ liệu mới để gửi");
+
+return;
+
+}
+
+// gửi
+
+sendToGoogleSheet({
+
+type:"NHAP",
+
+rows:toSend.map(item=>({
+
+id:item.id,
+ten:item.ten,
+ma:item.ma,
+
+sizes:JSON.stringify(item.sizes),
+
+kg:item.kg,
+
+date:new Date(item.date)
+.toLocaleString()
+
+}))
+
+});
+
+// đánh dấu đã gửi
+
+toSend.forEach(item=>{
+
+item.sent=true;
+
+});
+
+// lưu lại
+
+localStorage.setItem(
+"DATA_IMPORTED",
+JSON.stringify(importedData)
+);
+
+alert("✅ Đã gửi " + toSend.length + " dòng");
+
+}
+// ============================
+// GỬI DATA XUẤT LÊN SHEET
+// ============================
+
+function sendExportToSheet(){
+
+let toSend =
+exportedData.filter(x=>!x.sent);
+
+if(toSend.length===0){
+
+alert("Không có dữ liệu mới để gửi");
+
+return;
+
+}
+
+sendToGoogleSheet({
+
+type:"XUAT",
+
+rows:toSend.map(item=>({
+
+id:item.id,
+ten:item.ten,
+ma:item.ma,
+
+sizes:JSON.stringify(item.sizes),
+
+kg:item.kg,
+
+date:new Date(item.date)
+.toLocaleString()
+
+}))
+
+});
+
+// đánh dấu đã gửi
+
+toSend.forEach(item=>{
+
+item.sent=true;
+
+});
+
+// lưu lại
+
+localStorage.setItem(
+"DATA_EXPORTED",
+JSON.stringify(exportedData)
+);
+
+alert("✅ Đã gửi " + toSend.length + " dòng");
 
 }
 
