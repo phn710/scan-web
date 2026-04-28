@@ -119,7 +119,6 @@ background:#fafafa;
 }
 tr:hover{
 background:#ffeaa7;
-cursor:pointer;
 }
 
 .newRow{
@@ -351,8 +350,6 @@ box-shadow:0 4px 15px rgba(0,0,0,0.3);
 
 <button class="tabBtn" onclick="showTab('dataMaster',this)">📦 DATA MASTER</button>
 
-<button class="tabBtn" onclick="showTab('stockOnline',this)">📊 BÁO CÁO TỒN</button>
-
 <button class="tabBtn" onclick="showTab('users',this)">👤 Users</button>
 
 <button class="tabBtn"
@@ -458,33 +455,6 @@ placeholder="Scan nhập tại đây...">
 
 </div>
 
-<div id="stockOnline" class="tab">
-
-<h2>📊 BÁO CÁO TỒN (ONLINE)</h2>
-
-<div class="box">
-
-<input type="month"
-id="stockMonth">
-
-<button class="primaryBtn"
-onclick="loadStockOnline()">
-🔄 Load dữ liệu tồn
-</button>
-
-<h3 id="totalStockOnline">
-Tổng mã: 0
-</h3>
-
-<div class="tableWrap">
-
-<table id="stockOnlineTable"></table>
-
-</div>
-
-</div>
-
-</div>
 <!-- PRINT QR TAB -->
 
 <div id="printQR" class="tab">
@@ -566,6 +536,17 @@ Tổng dòng: 0
 <button onclick="exportExcel()">📤 Xuất Excel</button>
 <button class="primaryBtn"onclick="sendExportToSheet()">📤 Gửi lên Sheet</button>
 
+<br>
+
+<br>
+
+<input 
+placeholder="🔍 Tìm ID hoặc MA..."
+oninput="
+filterID=this.value.toLowerCase();
+filterMA=this.value.toLowerCase();
+applyExportFilter();
+">
 </div>
 
 <div class="box">
@@ -588,9 +569,27 @@ Tổng dòng: 0
 onclick="loadSheetNhap()">
 🔄 Load dữ liệu
 </button>
+<button onclick="filterNotScanned()">
+🔴 Chỉ hiện ID chưa quét
+</button>
+
+<button onclick="renderExportList()">
+🔄 Hiện lại tất cả
+</button>
+
+<br>
+
+<input 
+id="searchExportList"
+placeholder="🔍 Tìm ID hoặc MA..."
+oninput="searchExportList()"
+style="width:250px;">
 
 <div class="tableWrap">
 
+<h3 id="totalExportList">
+Tổng thùng: 0 | Đã quét: 0 | Chưa quét: 0
+</h3>
 <table id="exportListTable"></table>
 
 </div>
@@ -656,20 +655,33 @@ Tổng ID: 0
 
 <script>
 
-function showMessage(msg){
+function showMessage(msg,type="error"){
 
 let box=document.getElementById("scanMessage");
 
 box.innerText=msg;
 
-box.style.display="block";
+// ⭐ đổi màu theo loại
 
-setTimeout(()=>{
-box.style.display="none";
-},1200);
+if(type==="ok"){
+
+box.style.background="#00b894"; // xanh
+
+}else{
+
+box.style.background="#d63031"; // đỏ
 
 }
 
+box.style.display="block";
+
+setTimeout(()=>{
+
+box.style.display="none";
+
+},1200);
+
+}
 // ============================
 // CONFIG
 // ============================
@@ -975,7 +987,7 @@ localStorage.getItem("DATA_EXPORTED")
 
 if(exportedData.find(x=>x.id===value)){
 
-showMessage("❌ ID đã xuất rồi");
+showMessage("❌ ID đã xuất rồi","ok");
 
 input.value="";
 return;
@@ -986,7 +998,7 @@ if(!value) return;
 
 if(data.find(x=>x.id===value)){
 
-showMessage("❌ Trùng ID");
+showMessage("❌ Trùng ID","ok");
 
 input.value="";
 return;
@@ -1070,7 +1082,7 @@ if(!value) return;
 
 if(importedData.find(x=>x.id===value)){
 
-showMessage("❌ ID đã nhập");
+showMessage("❌ ID đã nhập","ok");
 
 input.value="";
 input.focus();
@@ -1506,11 +1518,10 @@ let filtered = exportedData.filter(x=>{
 
 return (
 
-(!filterID || x.id.toLowerCase().includes(filterID)) &&
-
-(!filterTEN || x.ten.toLowerCase().includes(filterTEN)) &&
-
-(!filterMA || x.ma.toLowerCase().includes(filterMA))
+(!filterID || 
+x.id.toLowerCase().includes(filterID) ||
+x.ma.toLowerCase().includes(filterID)
+)
 
 );
 
@@ -1519,7 +1530,42 @@ return (
 renderExport(filtered);
 
 }
+function searchExportList(){
 
+let key =
+document.getElementById("searchExportList")
+.value
+.toLowerCase();
+
+if(!key){
+
+renderExportList();
+return;
+
+}
+
+let filtered =
+sheetNhapData.filter(x=>{
+
+return (
+
+(x.id || "")
+.toLowerCase()
+.includes(key)
+
+||
+
+(x.ma || "")
+.toLowerCase()
+.includes(key)
+
+);
+
+});
+
+renderExportListFiltered(filtered);
+
+}
 // ============================
 // FILTER IMPORT DATE
 // ============================
@@ -2096,16 +2142,40 @@ total += value.length;
 
 }
 
-// đổi sang MB
-
+// đổi sang KB
 let kb=(total/1024).toFixed(0);
 
-document.getElementById("storageInfo")
-.innerText="Storage: "+kb+" KB";
+let text = "Storage: " + kb + " KB";
+
+let el = document.getElementById("storageInfo");
+
+// ===== CẢNH BÁO =====
+
+// gần đầy (~4MB)
+if(kb > 4000){
+
+el.style.color = "#e17055";   // cam
+el.innerText = "⚠️ " + text + " (Gần đầy)";
+
+// rất đầy (~4.8MB)
+if(kb > 4800){
+
+el.style.color = "#d63031";   // đỏ
+el.innerText = "🚨 " + text + " (Sắp đầy!)";
+
+alert("🚨 Bộ nhớ sắp đầy!\nHãy backup và xoá dữ liệu cũ.");
+
 }
 
-let isExporting=false;
+}else{
 
+el.style.color = "#2d3436";
+el.innerText = text;
+
+}
+
+}
+let isExporting=false;
 async function exportAll(){
 
 if(isExporting){
@@ -2467,69 +2537,17 @@ return (
 renderExportListFiltered(filtered);
 
 }
-
-function renderExportListFiltered(dataFiltered){
-
-let table=
-document.getElementById("exportListTable");
-
-table.innerHTML="";
-
-let header=table.insertRow();
-
-[
-"STT",
-"ID",
-"TEN",
-"MA",
-"80","90","100",
-"110","120","130",
-"140","150","160","170",
-"KG",
-"NGÀY"
-]
-
-.forEach(h=>{
-
-let th=document.createElement("th");
-
-th.innerText=h;
-
-header.appendChild(th);
-
-});
-
-dataFiltered.forEach((item,index)=>{
-
-let row=table.insertRow();
-
-row.insertCell().innerText=index+1;
-row.insertCell().innerText=item.id;
-row.insertCell().innerText=item.ten;
-row.insertCell().innerText=item.ma;
-
-SIZES.forEach(s=>{
-
-let val=item.sizes?.[s];
-
-row.insertCell().innerText =
-(val===0 || val===undefined) ? "" : val;
-
-});
-
-row.insertCell().innerText=item.kg;
-
-row.insertCell().innerText=
-new Date(item.date)
-.toLocaleDateString();
-
-});
-
-}
-
 function renderExportList(){
 
-let table=
+// ⭐ load lại exported mới nhất
+exportedData =
+JSON.parse(
+localStorage.getItem("DATA_EXPORTED") || "[]"
+);
+
+let scannedIDs = new Set();
+
+let table =
 document.getElementById("exportListTable");
 
 table.innerHTML="";
@@ -2562,6 +2580,22 @@ sheetNhapData.forEach((item,index)=>{
 
 let row=table.insertRow();
 
+// ⭐ kiểm tra đã quét chưa
+let isScanned =
+exportedData.some(x=>x.id===item.id);
+
+// ⭐ tô màu
+if(isScanned){
+
+row.style.background="#55efc4";
+
+scannedIDs.add(item.id);
+
+}else{
+
+row.style.background="#fab1a0";
+
+}
 row.insertCell().innerText=index+1;
 
 row.insertCell().innerText=item.id;
@@ -2582,42 +2616,113 @@ row.insertCell().innerText =
 row.insertCell().innerText=item.kg;
 
 row.insertCell().innerText=
-new Date(item.date).toLocaleDateString();
+new Date(item.date)
+.toLocaleDateString();
 
 });
 
-// ===== TỔNG THÙNG =====
+// ===== tổng =====
 
 let uniqueIDs =
 [...new Set(sheetNhapData.map(x => x.id))];
 
-let totalText =
-document.getElementById("totalExportList");
+let total = uniqueIDs.length;
 
-if(!totalText){
+let scannedCount = scannedIDs.size;
 
-let h3=document.createElement("h3");
+let notScanned = total - scannedCount;
 
-h3.id="totalExportList";
+document.getElementById("totalExportList")
+.innerText =
+"Tổng thùng: " + total +
+" | Đã quét: " + scannedCount +
+" | Chưa quét: " + notScanned;
 
-document.getElementById("exportListTable")
-.parentElement
-.parentElement
-.insertBefore(
-h3,
-document.getElementById("exportListTable")
-.parentElement
+}
+function renderExportListFiltered(dataFiltered){
+
+// ⭐ BẮT BUỘC PHẢI CÓ
+exportedData =
+JSON.parse(
+localStorage.getItem("DATA_EXPORTED") || "[]"
 );
+let scannedIDs = new Set();
 
-totalText=h3;
+let table =
+document.getElementById("exportListTable");
+
+table.innerHTML="";
+
+let header=table.insertRow();
+
+[
+"STT","ID","TEN","MA",
+"80","90","100",
+"110","120","130",
+"140","150","160","170",
+"KG","NGÀY"
+].forEach(h=>{
+let th=document.createElement("th");
+th.innerText=h;
+header.appendChild(th);
+});
+
+dataFiltered.forEach((item,index)=>{
+
+let row=table.insertRow();
+
+// ⭐ check đã quét
+let isScanned =
+exportedData.some(x=>x.id===item.id);
+
+// ⭐ màu
+if(isScanned){
+
+row.style.background="#55efc4";
+
+scannedIDs.add(item.id);
+
+}else{
+
+row.style.background="#fab1a0";
 
 }
+row.insertCell().innerText=index+1;
+row.insertCell().innerText=item.id;
+row.insertCell().innerText=item.ten;
+row.insertCell().innerText=item.ma;
 
-totalText.innerText=
-"Tổng thùng: " + uniqueIDs.length;
+SIZES.forEach(s=>{
+let val=item.sizes?.[s];
+row.insertCell().innerText =
+(val===0 || val===undefined) ? "" : val;
+});
+
+row.insertCell().innerText=item.kg;
+row.insertCell().innerText=
+new Date(item.date).toLocaleDateString();
+
+});
+
+// ===== tổng =====
+// ===== tổng theo ID (không trùng)
+
+let uniqueIDs =
+[...new Set(dataFiltered.map(x => x.id))];
+
+let total = uniqueIDs.length;
+
+let scannedCount = scannedIDs.size;
+
+let notScanned = total - scannedCount;
+
+document.getElementById("totalExportList")
+.innerText =
+"Tổng thùng: " + total +
+" | Đã quét: " + scannedCount +
+" | Chưa quét: " + notScanned;
 
 }
-
 // ============================
 // DEFAULT TODAY DATE (FIX LỆCH NGÀY)
 // ============================
@@ -2764,7 +2869,29 @@ createMixForm(row,container);
 
 }
 
+function formatID(id){
 
+let text=id.toString();
+
+if(text.length<=4) return text;
+
+// tách phần đầu và 4 số cuối
+let first=text.slice(0,-4);
+let last=text.slice(-4);
+
+// làm 4 số cuối to hơn
+return `
+<span>${first}</span>
+<span style="
+font-size:26px;
+font-weight:bold;
+letter-spacing:1px;
+">
+${last}
+</span>
+`;
+
+}
 // ============================
 // FORM FULL
 // ============================
@@ -2822,7 +2949,7 @@ font-size:16px;
 font-weight:bold;
 letter-spacing:1px;
 ">
-${row.ID}
+${formatID(row.ID)}
 </td>
 
 <td
@@ -3091,7 +3218,7 @@ font-weight:bold;
 text-align:center;
 background:#ffeaa7;
 ">
-${row.ID}
+${formatID(row.ID)}
 </td>
 </tr>
 
@@ -3617,264 +3744,6 @@ importTo.value = todayStr;
 
 });
 
-async function loadStockOnline(){
-
-// ===== LOAD NHẬP =====
-
-let urlNhap =
-"https://script.google.com/macros/s/AKfycby5O2TPtSJi8meNJ2ilpgS9TKYHa2ZCbygAAAE277GNStGXdlXqn8gO5GyiY8ZMF5hSeQ/exec?type=NHAP";
-
-let urlXuat =
-"https://script.google.com/macros/s/AKfycby5O2TPtSJi8meNJ2ilpgS9TKYHa2ZCbygAAAE277GNStGXdlXqn8gO5GyiY8ZMF5hSeQ/exec?type=XUAT";
-
-try{
-
-let resNhap=await fetch(urlNhap);
-let dataNhapSheet=await resNhap.json();
-
-let resXuat=await fetch(urlXuat);
-let dataXuatSheet=await resXuat.json();
-
-
-// ⭐ LỌC THEO THÁNG
-
-let monthInput =
-document.getElementById("stockMonth").value;
-
-if(monthInput){
-
-dataNhapSheet =
-dataNhapSheet.filter(item=>{
-
-if(!item.date) return false;
-
-let d=new Date(item.date);
-
-let m=d.getMonth()+1;
-
-let y=d.getFullYear();
-
-let ym =
-y+"-"+String(m).padStart(2,"0");
-
-return ym===monthInput;
-
-});
-
-
-dataXuatSheet =
-dataXuatSheet.filter(item=>{
-
-if(!item.date) return false;
-
-let d=new Date(item.date);
-
-let m=d.getMonth()+1;
-
-let y=d.getFullYear();
-
-let ym =
-y+"-"+String(m).padStart(2,"0");
-
-return ym===monthInput;
-
-});
-
-}
-
-
-// ===== TÍNH TỒN =====
-
-let map={};
-
-
-// ===== NHẬP =====
-
-dataNhapSheet.forEach(item=>{
-
-let key=item.ma;
-
-if(!map[key]){
-
-map[key]={
-
-ten:item.ten,
-ma:item.ma,
-
-nhap:0,
-xuat:0
-
-};
-
-}
-
-let sizes={};
-
-if(typeof item.sizes==="string"){
-
-try{
-
-sizes=JSON.parse(item.sizes);
-
-}catch{
-
-sizes={};
-
-}
-
-}else{
-
-sizes=item.sizes || {};
-
-}
-Object.values(sizes)
-
-.forEach(v=>{
-
-map[key].nhap+=Number(v||0);
-
-});
-
-});
-
-
-// ===== XUẤT =====
-
-dataXuatSheet.forEach(item=>{
-
-let key=item.ma;
-
-if(!map[key]){
-
-map[key]={
-
-ten:item.ten,
-ma:item.ma,
-
-nhap:0,
-xuat:0
-
-};
-
-}
-
-let sizes={};
-
-if(typeof item.sizes==="string"){
-
-try{
-
-sizes=JSON.parse(item.sizes);
-
-}catch{
-
-sizes={};
-
-}
-
-}else{
-
-sizes=item.sizes || {};
-
-}
-
-Object.values(sizes)
-
-.forEach(v=>{
-
-map[key].xuat+=Number(v||0);
-
-});
-
-});
-
-
-// ===== RENDER =====
-
-renderStockOnline(map);
-
-}catch(err){
-
-alert("❌ Lỗi load dữ liệu");
-
-console.log(err);
-
-}
-
-}
-
-function renderStockOnline(map){
-
-let table=
-document.getElementById("stockOnlineTable");
-
-table.innerHTML="";
-
-let header=table.insertRow();
-
-[
-"STT",
-"TEN",
-"MA",
-"NHẬP",
-"XUẤT",
-"TỒN"
-]
-
-.forEach(h=>{
-
-let th=document.createElement("th");
-
-th.innerText=h;
-
-header.appendChild(th);
-
-});
-
-let index=1;
-
-Object.values(map)
-
-.forEach(item=>{
-
-let ton=
-item.nhap-item.xuat;
-
-let row=table.insertRow();
-
-row.insertCell().innerText=index++;
-
-row.insertCell().innerText=item.ten;
-
-row.insertCell().innerText=item.ma;
-
-row.insertCell().innerText=item.nhap;
-
-row.insertCell().innerText=item.xuat;
-
-let cell=row.insertCell();
-
-cell.innerText=ton;
-
-
-// ⭐ tồn âm → đỏ
-
-if(ton<0){
-
-cell.style.color="red";
-cell.style.fontWeight="bold";
-
-}
-
-});
-
-document.getElementById(
-"totalStockOnline"
-).innerText=
-
-"Tổng mã: "+Object.keys(map).length;
-
-}
 
 // ============================
 // GỬI DATA NHẬP LÊN SHEET
@@ -3934,6 +3803,25 @@ JSON.stringify(importedData)
 );
 
 alert("✅ Đã gửi " + toSend.length + " dòng");
+
+}
+function filterNotScanned(){
+
+// ⭐ load lại exported mới nhất
+exportedData =
+JSON.parse(
+localStorage.getItem("DATA_EXPORTED") || "[]"
+);
+
+let filtered =
+sheetNhapData.filter(item=>{
+
+return !exportedData
+.some(x=>x.id===item.id);
+
+});
+
+renderExportListFiltered(filtered);
 
 }
 // ============================
