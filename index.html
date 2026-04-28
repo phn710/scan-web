@@ -661,28 +661,39 @@ let box=document.getElementById("scanMessage");
 
 box.innerText=msg;
 
-// ⭐ đổi màu theo loại
+// ⭐ màu theo loại
 
 if(type==="ok"){
 
 box.style.background="#00b894"; // xanh
 
-}else{
+}
+else if(type==="loading"){
+
+box.style.background="#fdcb6e"; // vàng
+box.style.color="#2d3436";
+
+}
+else{
 
 box.style.background="#d63031"; // đỏ
+box.style.color="white";
 
 }
 
 box.style.display="block";
 
+// ⭐ chỉ auto tắt nếu KHÔNG phải loading
+
+if(type!=="loading"){
+
 setTimeout(()=>{
-
 box.style.display="none";
-
 },1200);
 
 }
-// ============================
+
+}// ============================
 // CONFIG
 // ============================
 
@@ -2484,26 +2495,29 @@ console.log("Lỗi load DATA:",err);
 
 async function refreshMaster(){
 
+// ⭐ hiện loading trước
+showMessage("⏳ Đang load DATA MASTER...", "loading");
+
 try{
 
 await loadDataMaster();
 
-alert("✅ Đã cập nhật DATA MASTER");
-
 renderDataMaster();
+
+// ⭐ load xong mới đổi thông báo
+showMessage("✅ Đã cập nhật DATA MASTER", "ok");
 
 document.getElementById("qrInputNhap").focus();
 
 }catch(err){
 
-alert("❌ Lỗi load DATA MASTER");
+showMessage("❌ Lỗi load DATA MASTER");
 
 console.log(err);
 
 }
 
 }
-
 function applyExportListFilter(){
 
 let table =
