@@ -566,9 +566,10 @@ applyExportFilter();
 <h2>📤 List xuất hàng</h2>
 
 <button class="primaryBtn"
-onclick="loadSheetNhap()">
+onclick="loadSheetNhapWithLoading()">
 🔄 Load dữ liệu
 </button>
+
 <button onclick="filterNotScanned()">
 🔴 Chỉ hiện ID chưa quét
 </button>
@@ -877,12 +878,6 @@ btn.classList.add("active");
 
 // nếu tab export thì render
 
-
-if(name==="exportList"){
-
-loadSheetNhap();
-
-}
 
 if(name==="dataMaster"){
 
@@ -2452,6 +2447,27 @@ console.log("Lỗi load LIST:",err);
 }
 
 }
+
+async function loadSheetNhapWithLoading(){
+
+// ⭐ hiện loading
+showMessage("⏳ Đang load LIST xuất hàng...", "loading");
+
+try{
+
+await loadSheetNhap();
+
+// ⭐ load xong
+showMessage("✅ Đã load LIST xuất hàng", "ok");
+
+}catch(err){
+
+showMessage("❌ Lỗi load LIST xuất hàng");
+
+}
+
+}
+
 function applyImportFilter(){
 
 let filtered = importedData.filter(x=>{
@@ -3785,7 +3801,7 @@ sendToGoogleSheet({
 type:"NHAP",
 
 rows:toSend.map(item=>({
-
+note:item.note || "",
 id:item.id,
 ten:item.ten,
 ma:item.ma,
@@ -3860,7 +3876,7 @@ sendToGoogleSheet({
 type:"XUAT",
 
 rows:toSend.map(item=>({
-
+note:item.note || "",
 id:item.id,
 ten:item.ten,
 ma:item.ma,
