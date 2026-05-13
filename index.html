@@ -283,7 +283,47 @@ text-align:center;
 font-size:10px;   /* tăng size */
 
 }
+.pagination{
+display:flex;
+justify-content:center;
+align-items:center;
+gap:10px;
+padding:18px 0;
+}
 
+.pagination button{
+
+width:38px;
+height:38px;
+
+border:none;
+border-radius:10px;
+
+background:#dfe6e9;
+
+font-size:15px;
+font-weight:bold;
+
+cursor:pointer;
+
+transition:0.2s;
+}
+
+.pagination button:hover{
+
+background:#b2bec3;
+
+}
+
+.pagination button.active{
+
+background:#0984e3;
+color:white;
+
+box-shadow:
+0 2px 8px rgba(0,0,0,0.2);
+
+}
 </style>
 
 </head>
@@ -352,12 +392,20 @@ box-shadow:0 4px 15px rgba(0,0,0,0.3);
 
 <button class="tabBtn" onclick="showTab('users',this)">👤 Users</button>
 
-<button class="tabBtn"
-onclick="showTab('printQR',this)">
-🖨️ IN QR
-</button>
+<button class="tabBtn" onclick="showTab('printQR',this)"> 🖨️ IN QR</button>
 
 <button onclick="backupData()">📦 Backup</button>
+
+<input type="file"
+id="restoreFile"
+style="display:none"
+onchange="restoreBackup(event)">
+
+<button onclick="
+document.getElementById('restoreFile').click()
+">
+♻️ Restore
+</button>
 
 <button onclick="backupAndClear()">📦 Backup + 🧹 Xóa dữ liệu</button>
 
@@ -649,7 +697,7 @@ Tổng ID: 0
 <table id="dataMasterTable"></table>
 
 </div>
-
+<div id="paginationMaster" class="pagination"></div>
 </div>
 
 </div>
@@ -746,6 +794,8 @@ localStorage.getItem("USERS")
 );
 
 let currentUser=null;
+let currentPageMaster = 1;
+const MASTER_PER_PAGE = 50;
 
 
 // ============================
@@ -829,7 +879,7 @@ loadSheetNhap();
 // renderImport để sau cùng
 setTimeout(()=>{
 
-renderImport();
+filterImportByDate();
 
 },500);
 
@@ -1226,12 +1276,12 @@ let header=table.insertRow();
 "STT",
 "NOTE",
 "ID",
-"TEN",
-"MA",
+"TÊN HÀNG",
+"MÃ HÀNG",
 
-"80","90","100",
-"110","120","130",
-"140","150","160","170",
+"80/55","90/60","100/65",
+"110/70","120/75","130/80",
+"140/85","150/90","160/95","170",
 
 "KG",
 "TIME",
@@ -1355,9 +1405,9 @@ let header=table.insertRow();
 "ID",
 "TEN",
 "MA",
-"80","90","100",
-"110","120","130",
-"140","150","160","170",
+"80/55","90/60","100/65",
+"110/70","120/75","130/80",
+"140/85","150/90","160/95","170",
 "KG",
 "NGÀY",
 "XÓA"
@@ -1791,14 +1841,12 @@ delCell.appendChild(btn);
 
 function renderDataMaster(filteredData){
 
-let table=
+let table =
 document.getElementById("dataMasterTable");
-
-if(!table) return;
 
 table.innerHTML="";
 
-let header=table.insertRow();
+let header = table.insertRow();
 
 ["STT","ID","TEN","MA"]
 .forEach(h=>{
@@ -1811,31 +1859,251 @@ header.appendChild(th);
 
 });
 
-let keys=
-Object.keys(DATA);
+// ===== SORT MỚI -> CŨ =====
+let keys =
+Object.keys(DATA)
+.sort()
+.reverse();
 
-let list=
-filteredData || keys;
 
-list.forEach((id,index)=>{
+// ===== SEARCH =====
+if(filteredData){
 
-let item=DATA[id][0];
+document.getElementById(
+"paginationMaster"
+).innerHTML="";
 
-let row=table.insertRow();
+filteredData.forEach((id,index)=>{
 
-row.insertCell().innerText=index+1;
+let item = DATA[id][0];
+
+let row = table.insertRow();
+
+row.insertCell().innerText =
+index+1;
 
 row.insertCell().innerText=id;
 
-row.insertCell().innerText=item.ten || "";
+row.insertCell().innerText=
+item.ten || "";
 
-row.insertCell().innerText=item.ma || "";
+row.insertCell().innerText=
+item.ma || "";
 
 });
 
-document.getElementById("totalDataMaster")
-.innerText=
-"Tổng ID: " + list.length;
+return;
+}
+
+
+// ===== CHIA TRANG =====
+
+let start =
+(currentPageMaster - 1)
+* MASTER_PER_PAGE;
+
+let end =
+start + MASTER_PER_PAGE;
+
+let pageList =
+keys.slice(start,end);
+
+
+// ===== RENDER =====
+
+pageList.forEach((id,index)=>{
+
+let item = DATA[id][0];
+
+let row = table.insertRow();
+
+row.insertCell().innerText =
+start + index + 1;
+
+row.insertCell().innerText=id;
+
+row.insertCell().innerText=
+item.ten || "";
+
+row.insertCell().innerText=
+item.ma || "";
+
+});
+
+
+// ===== PAGINATION =====
+
+renderMasterPagination(keys);
+
+document.getElementById(
+"totalDataMaster"
+).innerText =
+"Tổng ID: " + keys.length;
+
+}
+
+
+function renderMasterPagination(keys){
+
+let totalPages =
+Math.ceil(
+keys.length / MASTER_PER_PAGE
+);
+
+let div =
+document.getElementById(
+"paginationMaster"
+);
+
+div.innerHTML="";
+
+if(totalPages <= 1) return;
+
+
+// PREV
+if(currentPageMaster > 1){
+
+let prev =
+document.createElement("button");
+
+prev.innerHTML="&lt;";
+
+prev.onclick=()=>{
+
+currentPageMaster--;
+
+renderDataMaster();
+
+};
+
+div.appendChild(prev);
+
+}
+
+
+// ===== PAGE =====
+
+let startPage =
+Math.max(1, currentPageMaster - 2);
+
+let endPage =
+Math.min(totalPages, currentPageMaster + 2);
+
+
+// trang đầu
+if(startPage > 1){
+
+let first =
+document.createElement("button");
+
+first.innerText = 1;
+
+first.onclick=()=>{
+
+currentPageMaster=1;
+renderDataMaster();
+
+};
+
+div.appendChild(first);
+
+
+// ...
+if(startPage > 2){
+
+let dot =
+document.createElement("span");
+
+dot.innerText="...";
+
+dot.style.padding="0 5px";
+
+div.appendChild(dot);
+
+}
+
+}
+
+
+// page giữa
+for(let i=startPage;i<=endPage;i++){
+
+let btn =
+document.createElement("button");
+
+btn.innerText=i;
+
+if(i===currentPageMaster){
+
+btn.classList.add("active");
+
+}
+
+btn.onclick=()=>{
+
+currentPageMaster=i;
+
+renderDataMaster();
+
+};
+
+div.appendChild(btn);
+
+}
+
+
+// trang cuối
+if(endPage < totalPages){
+
+if(endPage < totalPages - 1){
+
+let dot =
+document.createElement("span");
+
+dot.innerText="...";
+
+dot.style.padding="0 5px";
+
+div.appendChild(dot);
+
+}
+
+let last =
+document.createElement("button");
+
+last.innerText = totalPages;
+
+last.onclick=()=>{
+
+currentPageMaster=totalPages;
+
+renderDataMaster();
+
+};
+
+div.appendChild(last);
+
+}
+
+// NEXT
+if(currentPageMaster < totalPages){
+
+let next =
+document.createElement("button");
+
+next.innerHTML="&gt;";
+
+next.onclick=()=>{
+
+currentPageMaster++;
+
+renderDataMaster();
+
+};
+
+div.appendChild(next);
+
+}
 
 }
 
@@ -1845,21 +2113,29 @@ document.getElementById("totalDataMaster")
 
 function searchDataMaster(){
 
-let key=
+let key =
 document.getElementById("searchDataMaster")
 .value.toLowerCase();
 
-let keys=
-Object.keys(DATA);
+let keys = Object.keys(DATA);
 
-let filtered=
+if(!key){
+
+renderDataMaster();
+return;
+
+}
+
+let filtered =
 keys.filter(id=>{
 
-let item=DATA[id][0];
+let item = DATA[id][0];
 
 return (
 
-id.toLowerCase().includes(key) ||
+id.toLowerCase().includes(key)
+
+||
 
 (item.ma || "")
 .toLowerCase()
@@ -1872,6 +2148,7 @@ id.toLowerCase().includes(key) ||
 renderDataMaster(filtered);
 
 }
+
 function renderNhap(){
 
 let table=
@@ -1885,12 +2162,12 @@ let header=table.insertRow();
 "STT",
 "NOTE",
 "ID",
-"TEN",
-"MA",
+"TÊN HÀNG",
+"MÃ HÀNG",
 
-"80","90","100",
-"110","120","130",
-"140","150","160","170",
+"80/55","90/60","100/65",
+"110/70","120/75","130/80",
+"140/85","150/90","160/95","170",
 
 "KG"
 
@@ -2128,6 +2405,139 @@ updateStorageInfo();
 
 }
 
+function restoreBackup(event){
+
+let file = event.target.files[0];
+
+if(!file){
+
+alert("Chọn file backup");
+
+return;
+
+}
+
+let reader = new FileReader();
+
+reader.onload = function(e){
+
+try{
+
+let backup =
+JSON.parse(e.target.result);
+
+
+// ===== RESTORE =====
+
+if(backup.DATA_SCAN){
+
+localStorage.setItem(
+"DATA_SCAN",
+backup.DATA_SCAN
+);
+
+}
+
+if(backup.DATA_NHAP){
+
+localStorage.setItem(
+"DATA_NHAP",
+backup.DATA_NHAP
+);
+
+}
+
+if(backup.DATA_EXPORTED){
+
+localStorage.setItem(
+"DATA_EXPORTED",
+backup.DATA_EXPORTED
+);
+
+}
+
+if(backup.DATA_IMPORTED){
+
+localStorage.setItem(
+"DATA_IMPORTED",
+backup.DATA_IMPORTED
+);
+
+}
+
+if(backup.USERS){
+
+localStorage.setItem(
+"USERS",
+backup.USERS
+);
+
+}
+
+
+// ===== LOAD LẠI BIẾN =====
+
+data =
+JSON.parse(
+localStorage.getItem("DATA_SCAN")
+|| "[]"
+);
+
+dataNhap =
+JSON.parse(
+localStorage.getItem("DATA_NHAP")
+|| "[]"
+);
+
+exportedData =
+JSON.parse(
+localStorage.getItem("DATA_EXPORTED")
+|| "[]"
+);
+
+importedData =
+JSON.parse(
+localStorage.getItem("DATA_IMPORTED")
+|| "[]"
+);
+
+users =
+JSON.parse(
+localStorage.getItem("USERS")
+|| "[]"
+);
+
+
+// ===== RENDER =====
+
+render();
+
+renderNhap();
+
+renderImport();
+
+renderExport();
+
+renderUsers();
+
+updateStorageInfo();
+
+alert("✅ Restore thành công");
+
+}catch(err){
+
+alert("❌ File backup lỗi");
+
+console.log(err);
+
+}
+
+};
+
+reader.readAsText(file);
+
+}
+
 
 function updateStorageInfo(){
 
@@ -2327,9 +2737,9 @@ let header=table.insertRow();
 "ID",
 "TEN",
 "MA",
-"80","90","100",
-"110","120","130",
-"140","150","160","170",
+"80/55","90/60","100/65",
+"110/70","120/75","130/80",
+"140/85","150/90","160/95","170",
 "KG",
 "NGÀY",
 "XÓA"
@@ -2589,9 +2999,9 @@ let header=table.insertRow();
 "ID",
 "TEN",
 "MA",
-"80","90","100",
-"110","120","130",
-"140","150","160","170",
+"80/55","90/60","100/65",
+"110/70","120/75","130/80",
+"140/85","150/90","160/95","170",
 "KG",
 "NGÀY"
 ]
