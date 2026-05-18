@@ -3055,9 +3055,27 @@ row.insertCell().innerText =
 
 row.insertCell().innerText=item.kg;
 
-row.insertCell().innerText=
-new Date(item.date)
-.toLocaleDateString();
+let dateText="";
+
+if(item.date){
+
+let d = new Date(item.date);
+
+// nếu parse lỗi thì dùng nguyên giá trị
+if(isNaN(d)){
+
+dateText = item.date;
+
+}else{
+
+dateText =
+d.toLocaleDateString("vi-VN");
+
+}
+
+}
+
+row.insertCell().innerText = dateText;
 
 });
 
@@ -3139,8 +3157,26 @@ row.insertCell().innerText =
 });
 
 row.insertCell().innerText=item.kg;
-row.insertCell().innerText=
-new Date(item.date).toLocaleDateString();
+let dateText="";
+
+if(item.date){
+
+let d = new Date(item.date);
+
+if(isNaN(d)){
+
+dateText = item.date;
+
+}else{
+
+dateText =
+d.toLocaleDateString("vi-VN");
+
+}
+
+}
+
+row.insertCell().innerText = dateText;
 
 });
 
