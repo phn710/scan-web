@@ -2842,9 +2842,9 @@ sheetNhapData = [];   // ⭐ reset dữ liệu cũ
 
 let res = await fetch(url);
 
-let data = await res.json();
+let result = await res.json();
 
-sheetNhapData = data;
+sheetNhapData = result.data || [];
 
 renderExportList();
 
@@ -3069,7 +3069,7 @@ dateText = item.date;
 }else{
 
 dateText =
-d.toLocaleDateString("vi-VN");
+d.toLocaleDateString("en-US");
 
 }
 
@@ -3170,7 +3170,7 @@ dateText = item.date;
 }else{
 
 dateText =
-d.toLocaleDateString("vi-VN");
+d.toLocaleDateString("en-US");
 
 }
 
